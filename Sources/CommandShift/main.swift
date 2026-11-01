@@ -1,0 +1,3 @@
+import CommandShiftKit
+
+CommandShiftApplication.run()

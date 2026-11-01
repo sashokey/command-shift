@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+    paths: ['.github/release.json']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish verified release
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Check out release parameters and publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Download verified package
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: CommandShift-macos-arm64
+          path: dist
+
+      - name: Create draft, verify uploads, and publish
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          script: |
+            const fs = require('node:fs/promises');
+            const publishRelease = require('./Scripts/publish-release.cjs');
+            const config = JSON.parse(await fs.readFile('.github/release.json', 'utf8'));
+            const archive = await fs.readFile('dist/CommandShift-macos-arm64.zip');
+            const appVersion = (await fs.readFile('dist/version.txt', 'utf8')).trim();
+            const release = await publishRelease({ github, context, config, archive, appVersion });
+            core.summary.addLink(release.name, release.html_url);
+            await core.summary.write();

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['.github/release.json']
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-package:
+    name: Test and package
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Check toolchain and architecture
+        run: |
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          swift --version
+
+      - name: Test release publication
+        run: node --test Tests/ReleaseTests.cjs
+
+      - name: Run all Swift tests
+        run: swift test -Xswiftc -warnings-as-errors
+
+      - name: Build release app
+        run: bash Scripts/build-app.sh .build/CommandShift.app
+
+      - name: Verify app bundle and signature
+        run: bash Tests/check-app.sh .build/CommandShift.app
+
+      - name: Package verified app
+        run: |
+          mkdir -p .build/package/CommandShift dist
+          ditto .build/CommandShift.app .build/package/CommandShift/CommandShift.app
+          cp LICENSE README.md .build/package/CommandShift/
+          ditto -c -k --norsrc --keepParent .build/package/CommandShift dist/CommandShift-macos-arm64.zip
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' .build/CommandShift.app/Contents/Info.plist > dist/version.txt
+
+      - name: Store verified package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: CommandShift-macos-arm64
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
