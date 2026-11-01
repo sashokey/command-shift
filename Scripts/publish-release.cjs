@@ -36,11 +36,11 @@ module.exports = async function publishRelease({ github, context, config, archiv
         ...context.repo, tag_name: tag, target_commitish: context.sha,
         name: 'CommandShift ' + config.version, draft: true, prerelease: config.prerelease,
         body: [
-            'Native Swift input-source switching with the fixed Shift + Command shortcut.',
+            'Native Swift input-source switching with the fixed Shift + Command shortcut. Includes a native macOS app icon.',
             'Apple silicon, macOS 13 or later. Ad-hoc signed with Hardened Runtime; not notarized.',
             'Requires Input Monitoring only. No network code or third-party runtime dependencies.',
-            'The ProperWM-style menu includes Open at Login, Hide Status Bar Icon, and Quit. Reopen the running app from Applications to restore its icon.',
-            'Automated tests, app-bundle checks, and code-signature verification passed in CI. Manual permission, cross-application switching, and login-launch checks remain documented in README.md.',
+            'To restore a hidden menu bar icon, open CommandShift again from Applications while it is already running.',
+            'Automated tests, app-bundle checks, icon resolutions, and code-signature verification passed in CI.',
             `Source commit: ${context.sha}. The app archive and SHA-256 checksum are attached.`
         ].join('\n\n')
     })).data;
