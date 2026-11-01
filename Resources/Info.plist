@@ -10,6 +10,8 @@
     <string>CommandShift</string>
     <key>CFBundleIdentifier</key>
     <string>io.github.sashokey.command-shift</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon.icns</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
