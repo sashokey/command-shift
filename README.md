@@ -6,7 +6,7 @@ Requires macOS 13 or later. Supports Apple Silicon Macs.
 
 ## Installation
 
-Download the app ZIP from [Releases](https://github.com/sashokey/command-shift/releases), move `CommandShift.app` to `/Applications`, and open it. Grant **Input Monitoring** permission when prompted.
+Download the app ZIP from [Releases](https://github.com/sashokey/command-shift/releases), move `CommandShift.app` to `/Applications`, and open it. Grant **Input Monitoring** permission through the native macOS prompt. CommandShift starts listening automatically once permission is granted.
 
 The app is currently ad-hoc signed and not notarized. macOS may require **Privacy & Security → Open Anyway** on first launch.
 

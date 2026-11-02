@@ -27,10 +27,8 @@ module.exports = async function publishRelease({ github, context, config, archiv
         throw new Error('This version already belongs to another release; use a new version');
     }
     const name = `CommandShift-${tag}-macos-arm64.zip`;
-    const checksum = createHash('sha256').update(archive).digest('hex');
     const files = [
-        { name, data: archive, type: 'application/zip' },
-        { name: 'SHA256SUMS.txt', data: Buffer.from(`${checksum}  ${name}\n`), type: 'text/plain' }
+        { name, data: archive, type: 'application/zip' }
     ];
     if (!release) release = (await github.rest.repos.createRelease({
         ...context.repo, tag_name: tag, target_commitish: context.sha,
@@ -39,9 +37,10 @@ module.exports = async function publishRelease({ github, context, config, archiv
             'Native Swift input-source switching with the fixed Shift + Command shortcut. Includes a native macOS app icon.',
             'Apple silicon, macOS 13 or later. Ad-hoc signed with Hardened Runtime; not notarized.',
             'Requires Input Monitoring only. No network code or third-party runtime dependencies.',
+            'Uses only the native macOS Input Monitoring prompt. Starts listening automatically after permission is granted, without reopening the app.',
             'To restore a hidden menu bar icon, open CommandShift again from Applications while it is already running.',
             'Automated tests, app-bundle checks, icon resolutions, and code-signature verification passed in CI.',
-            `Source commit: ${context.sha}. The app archive and SHA-256 checksum are attached.`
+            `Source commit: ${context.sha}. The verified app archive is attached.`
         ].join('\n\n')
     })).data;
     for (const file of files) {

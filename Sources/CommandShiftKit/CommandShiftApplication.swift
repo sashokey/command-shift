@@ -31,7 +31,6 @@ public enum CommandShiftApplication {
             monitor: monitor,
             workspaceNotifications: NSWorkspace.shared.notificationCenter,
             requestPermission: { _ = CGRequestListenEventAccess() },
-            showPermissionHelp: { Alerts.permissionHelp() },
             showMonitorFailure: {
                 Alerts.error("Couldn’t Start CommandShift", "The keyboard event listener could not be started. Quit and reopen CommandShift from Applications.")
             }
