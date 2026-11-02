@@ -52,19 +52,18 @@ function fixture(overrides = {}) {
     };
 }
 
-test('publishes a stable release only after both assets are uploaded', async () => {
+test('publishes a stable release only after the app archive is uploaded', async () => {
     const state = fixture();
     const result = await publishRelease(state.options);
-    assert.deepEqual(state.events.map(event => event.type), ['create', 'upload', 'upload', 'publish']);
+    assert.deepEqual(state.events.map(event => event.type), ['create', 'upload', 'publish']);
     assert.equal(state.events[0].tag_name, 'v1.0.0');
     assert.equal(state.events[0].target_commitish, 'a'.repeat(40));
     assert.equal(state.events[0].draft, true);
     assert.equal(state.events[0].prerelease, false);
     assert.equal(state.events[1].name, 'CommandShift-v1.0.0-macos-arm64.zip');
     assert.deepEqual(state.events[1].data, Buffer.from('abc'));
-    assert.equal(state.events[2].name, 'SHA256SUMS.txt');
-    assert.equal(state.events[2].data.toString(), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad  CommandShift-v1.0.0-macos-arm64.zip\n');
-    assert.equal(state.events[3].make_latest, 'true');
+    assert.equal(result.assets.length, 1);
+    assert.equal(state.events[2].make_latest, 'true');
     assert.equal(result.draft, false);
 });
 
@@ -137,8 +136,8 @@ test('resumes a matching draft without replacing an already verified asset', asy
     });
     state.github.rest.repos.getReleaseByTag = async () => ({ data: state.release });
     const result = await publishRelease(state.options);
-    assert.deepEqual(state.events.map(event => event.type), ['upload', 'publish']);
-    assert.equal(state.events[0].name, 'SHA256SUMS.txt');
+    assert.deepEqual(state.events.map(event => event.type), ['publish']);
+    assert.equal(result.assets.length, 1);
     assert.equal(result.draft, false);
 });
 

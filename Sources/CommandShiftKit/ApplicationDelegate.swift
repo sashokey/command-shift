@@ -6,10 +6,10 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     private let monitor: KeyboardMonitor
     private let workspaceNotifications: NotificationCenter
     private let requestPermission: () -> Void
-    private let showPermissionHelp: () -> Void
     private let showMonitorFailure: () -> Void
     private var requestedPermission = false
-    private var presentingHelp = false
+    private var refreshingMonitoring = false
+    private var permissionTimer: Timer?
     private var sleeping = false
     private var sessionInactive = false
     private var observers: [NSObjectProtocol] = []
@@ -19,14 +19,12 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
         monitor: KeyboardMonitor,
         workspaceNotifications: NotificationCenter,
         requestPermission: @escaping () -> Void,
-        showPermissionHelp: @escaping () -> Void,
         showMonitorFailure: @escaping () -> Void
     ) {
         self.statusMenu = statusMenu
         self.monitor = monitor
         self.workspaceNotifications = workspaceNotifications
         self.requestPermission = requestPermission
-        self.showPermissionHelp = showPermissionHelp
         self.showMonitorFailure = showMonitorFailure
         super.init()
     }
@@ -64,22 +62,39 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refreshMonitoring(prompt: Bool) {
-        guard !sleeping, !sessionInactive, !presentingHelp else { return }
-        presentingHelp = prompt
-        defer { presentingHelp = false }
+        guard !sleeping, !sessionInactive, !refreshingMonitoring else { return }
+        refreshingMonitoring = true
+        defer { refreshingMonitoring = false }
         var state = monitor.start()
         if state == .permissionRequired, prompt, !requestedPermission {
             requestedPermission = true
             requestPermission()
             state = monitor.start()
         }
-        if prompt {
-            switch state {
-            case .permissionRequired: showPermissionHelp()
-            case .unavailable: showMonitorFailure()
-            case .running: break
-            }
+        switch state {
+        case .permissionRequired:
+            startPermissionPolling()
+        case .unavailable:
+            stopPermissionPolling()
+            if prompt { showMonitorFailure() }
+        case .running:
+            stopPermissionPolling()
         }
+    }
+
+    private func startPermissionPolling() {
+        guard permissionTimer == nil else { return }
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshMonitoring(prompt: false) }
+        }
+        timer.tolerance = 0.1
+        RunLoop.main.add(timer, forMode: .common)
+        permissionTimer = timer
+    }
+
+    private func stopPermissionPolling() {
+        permissionTimer?.invalidate()
+        permissionTimer = nil
     }
 
     private func workspaceChanged(_ name: Notification.Name) {
@@ -90,11 +105,15 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
         case NSWorkspace.sessionDidBecomeActiveNotification: sessionInactive = false
         default: break
         }
-        if name != NSWorkspace.didActivateApplicationNotification { monitor.stop() }
+        if name != NSWorkspace.didActivateApplicationNotification {
+            stopPermissionPolling()
+            monitor.stop()
+        }
         refreshMonitoring(prompt: false)
     }
 
     private func shutDown() {
+        stopPermissionPolling()
         observers.forEach(workspaceNotifications.removeObserver)
         observers.removeAll()
         statusMenu.onOpen = nil
