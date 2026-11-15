@@ -2,6 +2,8 @@ Cycles through enabled keyboard layouts and input modes across applications.
 
 Requires macOS 13 or later and an Apple Silicon Mac.
 
+Runs in App Sandbox with network connections blocked and no additional file-access permissions.
+
 ## Installation
 
 Download the app ZIP from [Releases](https://github.com/sashokey/command-shift/releases), move `CommandShift.app` to `/Applications`, and open it. Grant **Input Monitoring** permission through the native macOS prompt. CommandShift starts listening automatically once permission is granted.

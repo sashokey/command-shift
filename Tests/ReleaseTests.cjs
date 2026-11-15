@@ -46,7 +46,7 @@ function fixture(overrides = {}) {
         options: {
             github,
             context: { repo: { owner: 'example', repo: 'app' }, sha: 'a'.repeat(40) },
-            config: { version: '1.0.0', draft: false, prerelease: false },
+            config: { version: '1.0.0', draft: false, prerelease: false, notes: 'Release notes' },
             archive: Buffer.from('abc'), appVersion: '1.0.0'
         }
     };
@@ -70,7 +70,7 @@ test('publishes a stable release only after the app archive is uploaded', async 
 test('honors draft and prerelease flags without marking a prerelease as latest', async () => {
     for (const draft of [true, false]) {
         const state = fixture();
-        state.options.config = { version: '1.0.0', draft, prerelease: true };
+        state.options.config = { version: '1.0.0', draft, prerelease: true, notes: 'Release notes' };
         const result = await publishRelease(state.options);
         assert.equal(result.draft, draft);
         assert.equal(result.prerelease, true);
@@ -82,10 +82,10 @@ test('honors draft and prerelease flags without marking a prerelease as latest',
 
 test('rejects invalid release parameters before changing GitHub', async () => {
     const invalid = [
-        { config: { version: '../1.0.0', draft: false, prerelease: false } },
-        { config: { version: '01.0.0', draft: false, prerelease: false } },
-        { config: { version: '1.0.0', draft: 'false', prerelease: false } },
-        { config: { version: '1.0.0', draft: false } },
+        { config: { version: '../1.0.0', draft: false, prerelease: false, notes: 'Release notes' } },
+        { config: { version: '01.0.0', draft: false, prerelease: false, notes: 'Release notes' } },
+        { config: { version: '1.0.0', draft: 'false', prerelease: false, notes: 'Release notes' } },
+        { config: { version: '1.0.0', draft: false, notes: 'Release notes' } },
         { appVersion: '0.9.0' },
         { archive: Buffer.alloc(0) }
     ];
@@ -147,6 +147,22 @@ test('refuses to overwrite a published release or a draft for another commit', a
         Object.assign(state.release, change);
         state.github.rest.repos.getReleaseByTag = async () => ({ data: state.release });
         await assert.rejects(publishRelease(state.options));
+        assert.deepEqual(state.events, []);
+    }
+});
+
+test('publishes configured release notes with the verified source commit', async () => {
+    const state = fixture();
+    state.options.config.notes = 'App Sandbox blocks network connections.';
+    await publishRelease(state.options);
+    assert.equal(state.events[0].body, 'App Sandbox blocks network connections.\n\nSource commit: ' + 'a'.repeat(40) + '. The verified app archive is attached.');
+});
+
+test('rejects missing or invalid release notes before changing GitHub', async () => {
+    for (const notes of [undefined, '', ' \n ', 42, []]) {
+        const state = fixture();
+        state.options.config.notes = notes;
+        await assert.rejects(publishRelease(state.options), /notes/i);
         assert.deepEqual(state.events, []);
     }
 });

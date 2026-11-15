@@ -39,6 +39,9 @@ jobs:
       - name: Verify app bundle and signature
         run: bash Tests/check-app.sh .build/CommandShift.app
 
+      - name: Test rejection of excessive app permissions
+        run: COMMANDSHIFT_TEST_APP=.build/CommandShift.app node --test Tests/AppSecurityTests.cjs
+
       - name: Package verified app
         run: |
           mkdir -p .build/package/CommandShift dist

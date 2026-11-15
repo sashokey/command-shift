@@ -32,5 +32,17 @@ done
 
 /usr/bin/plutil -lint "$plist"
 /usr/bin/codesign --verify --strict "$app"
+node - "$app" <<'NODE'
+const assert = require('node:assert/strict');
+const { execFileSync, spawnSync } = require('node:child_process');
+const app = process.argv[2];
+const xml = execFileSync('/usr/bin/codesign', ['--display', '--entitlements', '-', '--xml', app]);
+const entitlements = JSON.parse(execFileSync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', '-'], { input: xml, encoding: 'utf8' }));
+assert.deepEqual(entitlements, { 'com.apple.security.app-sandbox': true }, 'The signed app must grant only App Sandbox');
+const signature = spawnSync('/usr/bin/codesign', ['--display', '--verbose=2', app], { encoding: 'utf8' });
+assert.equal(signature.status, 0, signature.stderr);
+const flags = signature.stderr.match(/^CodeDirectory .* flags=0x([0-9a-f]+)/m);
+assert.ok(flags && (parseInt(flags[1], 16) & 0x10000), 'Hardened Runtime must be enabled');
+NODE
 /usr/bin/file "$binary"
-printf 'PASS: app bundle metadata, icon resolutions, executable and signature\n'
+printf 'PASS: app bundle metadata, icon resolutions, executable, signature, minimal App Sandbox and Hardened Runtime\n'

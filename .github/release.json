@@ -1,5 +1,6 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "draft": false,
-  "prerelease": false
+  "prerelease": false,
+  "notes": "## Changes\n\n- Enabled App Sandbox with only the sandbox entitlement. Direct incoming and outgoing network connections are blocked; no additional file, device, personal-data, debugging, or runtime-exception entitlements are granted.\n- Kept Hardened Runtime enabled and Input Monitoring as the only requested privacy permission.\n- Added CI checks that reject app bundles with missing sandboxing, excessive entitlements, or missing Hardened Runtime.\n- Clarified installation, shortcut behavior, and recovery documentation.\n\nApple Silicon, macOS 13 or later. Ad-hoc signed; not notarized. Secure Keyboard Entry may prevent the shortcut from working. Automated tests and app-bundle verification must pass before this release is published."
 }

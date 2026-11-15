@@ -15,6 +15,9 @@ module.exports = async function publishRelease({ github, context, config, archiv
         || typeof config.draft !== 'boolean' || typeof config.prerelease !== 'boolean') {
         throw new Error('Release parameters must contain version X.Y.Z and boolean draft/prerelease flags');
     }
+    if (typeof config.notes !== 'string' || !config.notes.trim()) {
+        throw new Error('Release notes must be a non-empty string');
+    }
     if (appVersion !== config.version) throw new Error('App version does not match the requested release');
     if (!Buffer.isBuffer(archive) || archive.length === 0) throw new Error('App archive is empty or missing');
     const tag = 'v' + config.version;
@@ -34,12 +37,7 @@ module.exports = async function publishRelease({ github, context, config, archiv
         ...context.repo, tag_name: tag, target_commitish: context.sha,
         name: 'CommandShift ' + config.version, draft: true, prerelease: config.prerelease,
         body: [
-            'Native Swift input-source switching with the fixed Shift + Command shortcut. Includes a native macOS app icon.',
-            'Apple silicon, macOS 13 or later. Ad-hoc signed with Hardened Runtime; not notarized.',
-            'Requires Input Monitoring only. No network code or third-party runtime dependencies.',
-            'Uses only the native macOS Input Monitoring prompt. Starts listening automatically after permission is granted, without reopening the app.',
-            'To restore a hidden menu bar icon, open CommandShift again from Applications while it is already running.',
-            'Automated tests, app-bundle checks, icon resolutions, and code-signature verification passed in CI.',
+            config.notes.trim(),
             `Source commit: ${context.sha}. The verified app archive is attached.`
         ].join('\n\n')
     })).data;
